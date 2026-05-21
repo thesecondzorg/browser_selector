@@ -30,28 +30,26 @@ struct ContentView: View {
             .padding(.bottom, 20)
             
             // Browsers Grid
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100, maximum: 120), spacing: 16)], spacing: 20) {
-                    ForEach(browsers) { browser in
-                        BrowserButton(
-                            browser: browser,
-                            isHovered: hoveredBrowserId == browser.id,
-                            onHover: { hovering in
-                                if hovering {
-                                    hoveredBrowserId = browser.id
-                                } else if hoveredBrowserId == browser.id {
-                                    hoveredBrowserId = nil
-                                }
-                            },
-                            action: {
-                                onSelect(browser)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100, maximum: 120), spacing: 16)], spacing: 20) {
+                ForEach(browsers) { browser in
+                    BrowserButton(
+                        browser: browser,
+                        isHovered: hoveredBrowserId == browser.id,
+                        onHover: { hovering in
+                            if hovering {
+                                hoveredBrowserId = browser.id
+                            } else if hoveredBrowserId == browser.id {
+                                hoveredBrowserId = nil
                             }
-                        )
-                    }
+                        },
+                        action: {
+                            onSelect(browser)
+                        }
+                    )
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
             }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
             
             Divider()
             
@@ -68,7 +66,8 @@ struct ContentView: View {
             }
             .background(VisualEffectView().ignoresSafeArea())
         }
-        .frame(minWidth: 400, maxWidth: 600, minHeight: 300, maxHeight: 500)
+        .frame(width: 500)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 

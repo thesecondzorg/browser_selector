@@ -11,6 +11,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             forEventClass: AEEventClass(kInternetEventClass),
             andEventID: AEEventID(kAEGetURL)
         )
+        
+        // Pre-fetch browsers in the background so it opens instantly when a link is clicked
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = BrowserManager.shared.getInstalledBrowsers()
+        }
     }
     
     @objc func handleURLEvent(_ event: NSAppleEventDescriptor, withReplyEvent replyEvent: NSAppleEventDescriptor) {
@@ -40,18 +45,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         )
         
-        let hostingView = NSHostingView(rootView: contentView)
+        let hostingController = NSHostingController(rootView: contentView)
         
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 200),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         
+        window.contentViewController = hostingController
+        window.setContentSize(hostingController.view.fittingSize)
         window.center()
+        
         window.setFrameAutosaveName("Main Window")
-        window.contentView = hostingView
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true

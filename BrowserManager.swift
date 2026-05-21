@@ -11,7 +11,11 @@ struct Browser: Identifiable {
 class BrowserManager {
     static let shared = BrowserManager()
     
+    private var cachedBrowsers: [Browser]? = nil
+    
     func getInstalledBrowsers() -> [Browser] {
+        if let cached = cachedBrowsers { return cached }
+        
         guard let handlers = LSCopyAllHandlersForURLScheme("http" as CFString)?.takeRetainedValue() as? [String] else {
             return []
         }
@@ -37,7 +41,8 @@ class BrowserManager {
             uniqueBrowsers[b.bundleIdentifier] = b
         }
         
-        return uniqueBrowsers.values.sorted { $0.name < $1.name }
+        cachedBrowsers = uniqueBrowsers.values.sorted { $0.name < $1.name }
+        return cachedBrowsers!
     }
     
     func open(url: URL, with browser: Browser) {
