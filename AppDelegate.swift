@@ -1,6 +1,11 @@
 import Cocoa
 import SwiftUI
 
+class SelectorWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow?
     
@@ -24,50 +29,60 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         
-        showBrowserSelector(for: url)
+        // We must perform UI updates on the main thread
+        DispatchQueue.main.async {
+            self.showBrowserSelector(for: url)
+        }
     }
     
     func showBrowserSelector(for url: URL) {
         let browsers = BrowserManager.shared.getInstalledBrowsers()
-        
-        // If there's already a window, close it
-        window?.close()
         
         let contentView = ContentView(
             url: url,
             browsers: browsers,
             onSelect: { [weak self] browser in
                 BrowserManager.shared.open(url: url, with: browser)
-                self?.window?.close()
+                self?.window?.orderOut(nil)
             },
             onCancel: { [weak self] in
-                self?.window?.close()
+                self?.window?.orderOut(nil)
             }
         )
         
-        let hostingController = NSHostingController(rootView: contentView)
+        if self.window == nil {
+            let hostingController = NSHostingController(rootView: contentView)
+            
+            let win = SelectorWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 500, height: 200),
+                styleMask: [.titled, .closable, .fullSizeContentView, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false
+            )
+            
+            win.contentViewController = hostingController
+            win.setContentSize(hostingController.view.fittingSize)
+            win.center()
+            
+            win.titlebarAppearsTransparent = true
+            win.titleVisibility = .hidden
+            win.isMovableByWindowBackground = true
+            win.backgroundColor = .windowBackgroundColor
+            
+            // Critical for background apps: ensure it always appears on top and on all spaces
+            win.level = .floating
+            win.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            
+            self.window = win
+        } else {
+            if let hc = self.window?.contentViewController as? NSHostingController<ContentView> {
+                hc.rootView = contentView
+                self.window?.setContentSize(hc.view.fittingSize)
+                self.window?.center()
+            }
+        }
         
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 200),
-            styleMask: [.titled, .closable, .fullSizeContentView],
-            backing: .buffered,
-            defer: false
-        )
-        
-        window.contentViewController = hostingController
-        window.setContentSize(hostingController.view.fittingSize)
-        window.center()
-        
-        window.setFrameAutosaveName("Main Window")
-        window.titlebarAppearsTransparent = true
-        window.titleVisibility = .hidden
-        window.isMovableByWindowBackground = true
-        window.backgroundColor = .windowBackgroundColor
-        
-        self.window = window
-        
-        // Make app active and show window
         NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
+        self.window?.makeKeyAndOrderFront(nil)
     }
 }
