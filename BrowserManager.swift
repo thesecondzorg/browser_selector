@@ -121,16 +121,40 @@ class BrowserManager {
     
     func open(url: URL, with browser: Browser) {
         if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: browser.bundleIdentifier) {
-            let configuration = NSWorkspace.OpenConfiguration()
             
+            // For browsers with profiles, LaunchServices often ignores command-line arguments if the app is already running.
+            // By launching the internal executable directly via Process, the browser's own IPC handles routing the URL 
+            // to the correct profile window.
             if let profileId = browser.profileId {
-                if browser.browserType == .chromium {
-                    configuration.arguments = ["--profile-directory=\(profileId)"]
-                } else if browser.browserType == .firefox {
-                    configuration.arguments = ["-P", profileId]
+                let bundle = Bundle(url: appURL)
+                if let executableURL = bundle?.executableURL {
+                    let process = Process()
+                    process.executableURL = executableURL
+                    
+                    if browser.browserType == .chromium {
+                        process.arguments = ["--profile-directory=\(profileId)", url.absoluteString]
+                    } else if browser.browserType == .firefox {
+                        process.arguments = ["-P", profileId, url.absoluteString]
+                    }
+                    
+                    do {
+                        try process.run()
+                        
+                        // Ensure the app comes to the foreground
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            if let runningApp = NSRunningApplication.runningApplications(withBundleIdentifier: browser.bundleIdentifier).first {
+                                runningApp.activate(options: .activateIgnoringOtherApps)
+                            }
+                        }
+                        return
+                    } catch {
+                        print("Failed to run process: \(error.localizedDescription)")
+                    }
                 }
             }
             
+            // Fallback to standard LaunchServices for non-profiled browsers
+            let configuration = NSWorkspace.OpenConfiguration()
             NSWorkspace.shared.open([url], withApplicationAt: appURL, configuration: configuration) { _, error in
                 if let error = error {
                     print("Failed to open URL: \(error.localizedDescription)")
