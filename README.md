@@ -6,6 +6,7 @@ It runs entirely in the background without cluttering your Dock and dynamically 
 
 ## Features
 - **Dynamic Detection**: Automatically finds all installed browsers (Safari, Chrome, Firefox, Arc, etc.).
+- **Browser Profiles Integration**: Automatically detects and separates individual profiles for Chromium-based browsers (Chrome, Edge, Brave, Opera, Vivaldi) and Firefox.
 - **Background Agent**: Runs silently. Only appears when you actually click a link.
 - **Native UI**: Built with SwiftUI for a fast, modern, and native macOS experience.
 - **No Xcode Required**: Can be compiled directly from the terminal using the Swift compiler.
